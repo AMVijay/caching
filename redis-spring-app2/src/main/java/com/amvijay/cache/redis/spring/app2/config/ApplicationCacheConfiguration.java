@@ -1,5 +1,6 @@
 package com.amvijay.cache.redis.spring.app2.config;
 
+import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 
@@ -38,7 +39,10 @@ public class ApplicationCacheConfiguration {
 
 	@Bean
 	public RedisCacheConfiguration defaultCacheConfig() {
-		return RedisCacheConfiguration.defaultCacheConfig();
+		RedisCacheConfiguration redisCacheConfiguration = RedisCacheConfiguration.defaultCacheConfig();
+		redisCacheConfiguration.entryTtl(Duration.ofSeconds(1));
+		redisCacheConfiguration.disableCachingNullValues();
+		return redisCacheConfiguration;
 	}
 
 }
