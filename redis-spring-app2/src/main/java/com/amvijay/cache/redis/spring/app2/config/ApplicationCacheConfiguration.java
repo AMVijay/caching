@@ -11,7 +11,10 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisClusterConfiguration;
+import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
 @EnableCaching
@@ -19,7 +22,7 @@ public class ApplicationCacheConfiguration {
 
 	@Bean
 	public RedisCacheManager cacheManager() {
-		RedisCacheManager redisCacheManager = RedisCacheManager.builder(connectionFactory()).cacheDefaults(defaultCacheConfig())
+		RedisCacheManager redisCacheManager = RedisCacheManager.builder(standaloneConnectionFactory()).cacheDefaults(defaultCacheConfig())
 				.withInitialCacheConfigurations(Collections.singletonMap("predefined", defaultCacheConfig().disableCachingNullValues())).transactionAware().build();
 		return redisCacheManager;
 	}
@@ -27,13 +30,26 @@ public class ApplicationCacheConfiguration {
 	/**
 	 * Configured this property in application.properties
 	 */
-	@Value("${redis.cluster.config}")
-	private List<String> redisNodes;
+//	@Value("${redis.cluster.config}")
+//	private List<String> redisNodes;
+
+	@Value("${redis.standalone.server}")
+	private String redisHost;
+
+	@Value("${redis.standalone.port}")
+	private String redisPort;
+
+//	@Bean
+//	public JedisConnectionFactory clusterConnectionFactory() {
+//		RedisClusterConfiguration redisClusterConfiguration = new RedisClusterConfiguration(redisNodes);
+//		JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory(redisClusterConfiguration);
+//		return jedisConnectionFactory;
+//	}
 
 	@Bean
-	public JedisConnectionFactory connectionFactory() {
-		RedisClusterConfiguration redisClusterConfiguration = new RedisClusterConfiguration(redisNodes);
-		JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory(redisClusterConfiguration);
+	public JedisConnectionFactory standaloneConnectionFactory() {
+		RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration(redisHost, Integer.parseInt(redisPort));
+		JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory(redisStandaloneConfiguration);
 		return jedisConnectionFactory;
 	}
 
@@ -43,6 +59,14 @@ public class ApplicationCacheConfiguration {
 		redisCacheConfiguration.entryTtl(Duration.ofSeconds(1));
 		redisCacheConfiguration.disableCachingNullValues();
 		return redisCacheConfiguration;
+	}
+	
+	@Bean
+	public RedisTemplate<String,Object> redisTemplate() {
+		RedisTemplate<String,Object> redisTemplate = new RedisTemplate<String,Object>();
+		redisTemplate.setConnectionFactory(standaloneConnectionFactory());
+		redisTemplate.setKeySerializer( new StringRedisSerializer() );
+		return redisTemplate;
 	}
 
 }
