@@ -12,6 +12,7 @@ import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisClusterConfiguration;
 import org.springframework.data.redis.connection.RedisStandaloneConfiguration;
+import org.springframework.data.redis.connection.jedis.JedisClientConfiguration;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
@@ -22,16 +23,23 @@ public class ApplicationCacheConfiguration {
 
 	@Bean
 	public RedisCacheManager cacheManager() {
-		RedisCacheManager redisCacheManager = RedisCacheManager.builder(standaloneConnectionFactory()).cacheDefaults(defaultCacheConfig())
-				.withInitialCacheConfigurations(Collections.singletonMap("predefined", defaultCacheConfig().disableCachingNullValues())).transactionAware().build();
+		RedisCacheManager redisCacheManager = RedisCacheManager
+				.builder(standaloneConnectionFactory())
+				.cacheDefaults(defaultCacheConfig())
+				.withInitialCacheConfigurations(Collections.singletonMap("predefined", defaultCacheConfig().disableCachingNullValues()))
+				.transactionAware()
+				.build();
 		return redisCacheManager;
 	}
 
 	/**
 	 * Configured this property in application.properties
 	 */
-//	@Value("${redis.cluster.config}")
-//	private List<String> redisNodes;
+	@Value("${redis.cluster.config}")
+	private List<String> redisNodes;
+	
+	@Value("${redis.password}")
+	private String redisPassword;
 
 	@Value("${redis.standalone.server}")
 	private String redisHost;
@@ -42,21 +50,35 @@ public class ApplicationCacheConfiguration {
 //	@Bean
 //	public JedisConnectionFactory clusterConnectionFactory() {
 //		RedisClusterConfiguration redisClusterConfiguration = new RedisClusterConfiguration(redisNodes);
-//		JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory(redisClusterConfiguration);
+//		redisClusterConfiguration.setPassword(redisPassword);
+//		
+//		JedisClientConfiguration.JedisClientConfigurationBuilder jedisClientConfiguration = JedisClientConfiguration.builder();
+//	    jedisClientConfiguration.connectTimeout(Duration.ofSeconds(60));
+//	    jedisClientConfiguration.useSsl();
+//	    jedisClientConfiguration.usePooling();
+//		
+//		JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory(redisClusterConfiguration,jedisClientConfiguration.build());
 //		return jedisConnectionFactory;
 //	}
 
 	@Bean
 	public JedisConnectionFactory standaloneConnectionFactory() {
 		RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration(redisHost, Integer.parseInt(redisPort));
-		JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory(redisStandaloneConfiguration);
+		redisStandaloneConfiguration.setPassword(redisPassword);
+		
+		JedisClientConfiguration.JedisClientConfigurationBuilder jedisClientConfiguration = JedisClientConfiguration.builder();
+	    jedisClientConfiguration.connectTimeout(Duration.ofSeconds(60));
+	    jedisClientConfiguration.useSsl();
+	    jedisClientConfiguration.usePooling();
+		
+		JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory(redisStandaloneConfiguration, jedisClientConfiguration.build());
 		return jedisConnectionFactory;
 	}
 
 	@Bean
 	public RedisCacheConfiguration defaultCacheConfig() {
 		RedisCacheConfiguration redisCacheConfiguration = RedisCacheConfiguration.defaultCacheConfig();
-		redisCacheConfiguration.entryTtl(Duration.ofSeconds(1));
+		redisCacheConfiguration.entryTtl(Duration.ofSeconds(1000));
 		redisCacheConfiguration.disableCachingNullValues();
 		return redisCacheConfiguration;
 	}
