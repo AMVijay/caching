@@ -64,7 +64,9 @@ public class ApplicationCacheConfiguration {
 	@Bean
 	public JedisConnectionFactory standaloneConnectionFactory() {
 		RedisStandaloneConfiguration redisStandaloneConfiguration = new RedisStandaloneConfiguration(redisHost, Integer.parseInt(redisPort));
-		redisStandaloneConfiguration.setPassword(redisPassword);
+		if(!redisPassword.isEmpty()) {
+			redisStandaloneConfiguration.setPassword(redisPassword);
+		}
 		
 		JedisClientConfiguration.JedisClientConfigurationBuilder jedisClientConfiguration = JedisClientConfiguration.builder();
 	    jedisClientConfiguration.connectTimeout(Duration.ofSeconds(60));
